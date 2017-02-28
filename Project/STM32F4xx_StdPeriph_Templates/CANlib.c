@@ -183,12 +183,14 @@ void sendPid(uint8_t P, uint8_t Ilow, uint8_t Ihigh, uint8_t K) {
   * @retval None
   */
 void sendUartParam(void) {
+	static uint8_t sendBuffor[9];
 	sendBuffor[0] = '#';
 	for (int i = 0; i <= 7; i++) {
 		sendBuffor[i + 1] = rxMessage.Data[i];
 	}
-	UART2wyslij(8);
-}
+	UART2wyslij(&sendBuffor[0],8);
+	}
+
 
 //====================================================================================================
 /**
