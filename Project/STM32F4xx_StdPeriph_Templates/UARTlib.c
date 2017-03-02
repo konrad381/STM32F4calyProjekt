@@ -323,10 +323,10 @@ void wykonajPolecenie(void) {
 
 //===============================================================================
 /**
- * @brief  funkcja wysyla dane z sendBuffor[] do jednostki sterujacej za pomoca UART2
- * @note   funkcja wysyla pierwsza dan¹ i inicjalizuje przerwanie od pustego buffora
- * 		nadawczego, kolejne dane sa wpisywane i wysylane w przerwaniu, do momentu
- * 		gdy okreslona liczba znakow nie zostanie wyslana.
+ * @brief  funkcja wysyla dane ze wskazanego adresu tablicy do jednostki sterujacej za pomoca UART2
+ * @note   funkcja wpisuje adres pierwszego znaku w tablicy i d³ugosc tabicy do tablicy struktur,
+ * 		   która przechowuje dane i wysyla je pokolei( dane nie sa nadpisywane ani tracone)
+ * @param 	dataToSend - wskaŸnik do pierwszego elementu tablicy zawieraj¹cej dane do wyslania
  * @param 	dlugosc - liczba znaków które maj¹ zostac wyslane od(1 do 99)
  * @retval None
  */
