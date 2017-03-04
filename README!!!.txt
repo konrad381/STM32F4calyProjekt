@@ -12,3 +12,8 @@ Do kompilacji nale¿y wykorzystaæ program Atollic TrueSTUDIO (wersja darmowa dost
 Plik uruchomieniowy ca³ego projektu znajduje siê pod podan¹ scie¿k¹:
 
 .\STM32F4xx_DSP_StdPeriph_Lib_V1.7.1\Project\STM32F4xx_StdPeriph_Templates\TrueSTUDIO\STM32F446xx\.project
+
+Pliki zawieraj¹ce kod programu (bez bibliotek) znajduj¹ siê pod scie¿k¹:
+
+.\STM32F4calyProjekt/Project/STM32F4xx_StdPeriph_Templates/
+ 

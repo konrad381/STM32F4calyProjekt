@@ -116,7 +116,6 @@ void AdcBatteryStatusSend(void) {
 	static uint16_t licznik = 0;
 	static uint8_t sendBuffor[5];
 	licznik++;
-	if (licznik == batteryValuePeriod) {
 			licznik = 0;
 			sendBuffor[0] = '#';
 			sendBuffor[1] = 'B';

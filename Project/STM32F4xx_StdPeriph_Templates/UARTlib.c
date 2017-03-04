@@ -113,7 +113,7 @@ void USART2_IRQHandler(void) {
 			}
 		}
 		if (trwaWysylanie == 0) {
-			for (k = 0; k < 5 && trwaWysylanie == 0; ) {
+			for (k = 0; k < 9 && trwaWysylanie == 0; ) {
 				if (sendData[k].dataLenght > 0) {
 					USART_SendData(USART2, *sendData[k].sendBuffor);
 					sendData[k].sendBuffor++;
@@ -352,11 +352,13 @@ void UART2wyslij(uint8_t* dataToSend, uint8_t dlugosc) {
  * @retval None
  */
 void sendGpsData(uint8_t dlugoscRamki) {
-	static uint8_t sendBuffor[50];
+	static uint8_t sendBuffor[52];
 	if (GPSdata[3] == 'G' && GPSdata[4] == 'G' && GPSdata[5] == 'A'
 			&& dlugoscRamki >= 45) {
+		sendBuffor[0]='#';
+		sendBuffor[1]='G';
 		for (int i = 0; i < 49; i++) {
-					sendBuffor[i] = GPSdata[i];
+					sendBuffor[i+2] = GPSdata[i];
 		}
 			UART2wyslij(&sendBuffor[0],50);
 	}
