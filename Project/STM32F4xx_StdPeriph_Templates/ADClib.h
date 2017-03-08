@@ -33,7 +33,10 @@ volatile uint8_t batteryError;
 volatile uint8_t batteryAlert;
 volatile uint16_t batteryAlertTime;
 
+volatile uint16_t adcValue[5];
+
 void initAdc(void);
+void initAdcWatchdog(void);
 void ADC_IRQHandler(void);
 void AdcBatteryStatusCheck(void);
 void AdcBatteryStatusSend(void);

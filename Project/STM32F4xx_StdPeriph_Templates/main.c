@@ -14,7 +14,8 @@ int main(void) {
 	initCan();
 	initUart2();
 	initUart1();
-	initAdc();
+	initAdcWatchdog();
+	//initAdc();
 	GPIO_SetBits(GPIOC, GPIO_Pin_1);
 	lazikRuch = 1;
 	while (1) {
