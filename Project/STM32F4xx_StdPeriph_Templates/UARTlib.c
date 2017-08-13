@@ -101,8 +101,8 @@ void USART2_IRQHandler(void) {
 	if (USART_GetITStatus(USART2, USART_IT_TXE)) {
 		USART_ClearITPendingBit(USART2, USART_IT_TXE);
 
-		static volatile  int k=0;
-		static volatile  uint8_t trwaWysylanie=0;
+		static volatile int k = 0;
+		static volatile uint8_t trwaWysylanie = 0;
 
 		if (trwaWysylanie == 1) {
 			USART_SendData(USART2, *sendData[k].sendBuffor);
@@ -113,13 +113,13 @@ void USART2_IRQHandler(void) {
 			}
 		}
 		if (trwaWysylanie == 0) {
-			for (k = 0; k < 9 && trwaWysylanie == 0; ) {
+			for (k = 0; k < 9 && trwaWysylanie == 0;) {
 				if (sendData[k].dataLenght > 0) {
 					USART_SendData(USART2, *sendData[k].sendBuffor);
 					sendData[k].sendBuffor++;
 					sendData[k].dataLenght--;
 					trwaWysylanie = 1;
-				}else{
+				} else {
 					k++;
 				}
 			}
@@ -302,8 +302,8 @@ void ustawPredkosc(void) {
 void wykonajPolecenie(void) {
 	switch (polecenie[0]) {
 	case 'v':
-		ustawPredkosc();
 		ResetTimer();
+		ustawPredkosc();
 		break;
 	case 'S': {
 		ResetTimer();
@@ -312,12 +312,13 @@ void wykonajPolecenie(void) {
 		} else {
 			sendStop(STOP);
 		}
-		break;
-		case 'p':
-		ResetTimer();
-		sendPid(polecenie[1], polecenie[2], polecenie[3], polecenie[4]);
-		break;
 	}
+		break;
+//		case 'p':
+//		ResetTimer();
+//		sendPid(polecenie[1], polecenie[2], polecenie[3], polecenie[4]);
+//		break;
+
 	}
 }
 
@@ -355,12 +356,12 @@ void sendGpsData(uint8_t dlugoscRamki) {
 	static uint8_t sendBuffor[52];
 	if (GPSdata[3] == 'G' && GPSdata[4] == 'G' && GPSdata[5] == 'A'
 			&& dlugoscRamki >= 45) {
-		sendBuffor[0]='#';
-		sendBuffor[1]='G';
+		sendBuffor[0] = '#';
+		sendBuffor[1] = 'G';
 		for (int i = 0; i < 49; i++) {
-					sendBuffor[i+2] = GPSdata[i];
+			sendBuffor[i + 2] = GPSdata[i];
 		}
-			UART2wyslij(&sendBuffor[0],50);
+		UART2wyslij(&sendBuffor[0], 50);
 	}
 }
 

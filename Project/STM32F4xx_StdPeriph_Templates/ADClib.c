@@ -57,6 +57,7 @@ void initAdcWatchdog() {
 	ADC_SoftwareStartConv(ADC1);
 }
 
+
 //===============================================================================
 /**
  * @brief  Obs³uga przewania od analogwatchdog
@@ -76,7 +77,7 @@ void ADC_IRQHandler(void) {
 		ADC_ITConfig(ADC1, ADC_IT_AWD, DISABLE);
 		if (batteryAlert == 1) {
 			batteryError = 1;
-			sendStop(STOP);
+			//sendStop(STOP);
 		}
 		batteryAlert = 1;
 	}
@@ -120,8 +121,8 @@ void AdcBatteryStatusSend(void) {
 		licznik = 0;
 		sendBuffor[0] = '#';
 		sendBuffor[1] = 'B';
-		sendBuffor[2] = 0xFF & ADC_GetConversionValue(ADC1);
-		sendBuffor[3] = (0xFF00 & ADC_GetConversionValue(ADC1)) >> 8;
+		sendBuffor[2] = 0xFF & adcValue[0];
+		sendBuffor[3] = (0xFF00 & adcValue[0]) >> 8;
 		UART2wyslij(&sendBuffor[0], 4);
 	}
 }

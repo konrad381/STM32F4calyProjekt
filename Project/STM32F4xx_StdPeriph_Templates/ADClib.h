@@ -40,5 +40,4 @@ void initAdcWatchdog(void);
 void ADC_IRQHandler(void);
 void AdcBatteryStatusCheck(void);
 void AdcBatteryStatusSend(void);
-
 #endif

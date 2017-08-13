@@ -11,6 +11,7 @@
 #include "BootloaderLib.h"
 #include "UARTlib.h"
 #include "ADClib.h"
+#include "I2Clib.h"
 
 #define wartoscOpoznienia 200
 
