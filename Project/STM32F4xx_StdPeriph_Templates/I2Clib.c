@@ -1,189 +1,231 @@
 #include "I2Clib.h"
 
-void initI2C(void){
+void dataCoversionIMU(void);
+
+//Inicjalizacja I2C i wstêpene ustawienie parametrów IMU
+void IMUinit(void) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	I2C_InitTypeDef I2C_InitStruct;
+	NVIC_InitTypeDef NVIC_InitStructure;
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 
-	GPIO_PinAFConfig(GPIOB,GPIO_PinSource7,GPIO_AF_I2C1);
-	GPIO_PinAFConfig(GPIOB,GPIO_PinSource6,GPIO_AF_I2C1);
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_I2C1);
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1);
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-	GPIO_Init(GPIOB,&GPIO_InitStructure);
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
-	GPIO_Init(GPIOB,&GPIO_InitStructure);
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	I2C_InitStruct.I2C_Ack = I2C_Ack_Enable;
 	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	I2C_InitStruct.I2C_ClockSpeed = 100000;
+	I2C_InitStruct.I2C_ClockSpeed = 400000;
 	I2C_InitStruct.I2C_DutyCycle = I2C_DutyCycle_2;
 	I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;
 	I2C_InitStruct.I2C_OwnAddress1 = 0x60;
-	I2C_Init(I2C1,&I2C_InitStruct);
+	I2C_Init(I2C1, &I2C_InitStruct);
 
-	I2C_Cmd(I2C1,ENABLE);
+	I2C_Cmd(I2C1, ENABLE);
+
+	NVIC_InitStructure.NVIC_IRQChannel = I2C1_EV_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	//konfiguracja IMU
+	IMUsetReg(107, 0); //wybudzenie IMU z uspienia bez tego nic nie mierzy (ale odpowiada)
+
+	//Zezwolenie na przerwania (od teraz tylko pobiera dane)
+	I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
+
 }
 
-void I2Ctest(void){
-	I2C_GenerateSTART(I2C1,ENABLE);
-	while(I2C_GetFlagStatus(I2C1,I2C_FLAG_SB)!=SET){
+
+//Funkcja do inicjalizacji z obs³ug¹ Timeout
+volatile uint32_t Timeout = 0xFFFF;
+volatile uint32_t licznik = 0;
+
+void IMUsetReg(uint8_t regNum, uint8_t regValue) {
+	Timeout = 0xFFFF;
+	licznik = 0;
+	I2C_AcknowledgeConfig(I2C1, ENABLE);   //zazwolenie na potwierdzenie odebrania bitu ACK
+	I2C_GenerateSTART(I2C1, ENABLE); 		//wygenerowanie START (potem sprawdzam czy start przesz³o)
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_SB) != SET) {
+		Timeout--;
+		if (Timeout == 0) {
+			licznik++;
+			Timeout = 0xFFFF;
+		}
+		if (licznik == 3) // je¿eli wykona pêtle 3x i nic to chuj
+			return;
+	}
+	I2C_Send7bitAddress(I2C1, (IMUaddress << 1), I2C_Direction_Transmitter); //nadanie adresu
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) != SET) {
+		Timeout--;
+		if (Timeout == 0) {
+			licznik++;
+			Timeout = 0xFFFF;
+		}
+		if (licznik == 3) // je¿eli wykona pêtle 3x i nic to chuj
+			return;
+	}
+	I2C1->SR2;									//NIE WIEM CO TO ALE BEZ TEGO NIE DZIA£A!!!
+	I2C_SendData(I2C1, regNum);			//Wys³anie numeru rejestru
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) != SET) {
+		Timeout--;
+		if (Timeout == 0) {
+			licznik++;
+			Timeout = 0xFFFF;
+		}
+		if (licznik == 3) // je¿eli wykona pêtle 3x i nic to chuj
+			return;
+	}
+	I2C_SendData(I2C1, regValue); 		//Wys³anie wartoœci do wpisania do rejestru
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) != SET) {
+		Timeout--;
+		if (Timeout == 0) {
+			licznik++;
+			Timeout = 0xFFFF;
+		}
+		if (licznik == 3) // je¿eli wykona pêtle 3x i nic to chuj
+			return;
+	}
+	I2C_GenerateSTOP(I2C1, ENABLE);			//Wygenerowanie STOP
+}
+
+
+//Rozpoczyna komunikacjê z IMU (potem wszystko idzie w przerwaniu
+void I2CstartDataAcquisition(void) {
+	I2C_AcknowledgeConfig(I2C1, ENABLE);
+	I2C_GenerateSTART(I2C1, ENABLE);
+}
+
+//Funkcja testowa chujowa ale dzia³a wed³ug niej s¹ kolejne kroki w przerwaniu robione
+void I2Ctest(void) {
+	I2C_AcknowledgeConfig(I2C1, ENABLE);
+	I2C_GenerateSTART(I2C1, ENABLE);
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_SB) != SET) {
 		;
 	}
-	I2C_Send7bitAddress(I2C1,(myAddress<<1),I2C_Direction_Transmitter);
-	while(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR)!=SET){
-	//while(I2C_CheckEvent(I2C1,I2C_EVENT_MASTER_MODE_SELECT )!=SUCCESS){
+	I2C_Send7bitAddress(I2C1, (IMUaddress << 1), I2C_Direction_Transmitter);
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) != SET) {
 		;
 	}
 	I2C1->SR2;
-	I2C_SendData(I2C1,0x75);
-	while(I2C_GetFlagStatus(I2C1,I2C_FLAG_TXE)!=SET){
+	I2C_SendData(I2C1, 59);
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF) != SET) {
 		;
 	}
-	I2C_GenerateSTART(I2C1,ENABLE);
-	while(I2C_GetFlagStatus(I2C1,I2C_FLAG_SB)!=SET){
+	I2C_GenerateSTART(I2C1, ENABLE);
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_SB) != SET) {
 		;
 	}
-	I2C_Send7bitAddress(I2C1,(myAddress<<1),I2C_Direction_Receiver);
-	while(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR)!=SET){
+	I2C_Send7bitAddress(I2C1, (IMUaddress << 1), I2C_Direction_Receiver);
+	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) != SET) {
 		;
 	}
 	I2C1->SR2;
-	while(I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE)!=SET){
+	for (int i = 0; i < 14; i++) {
+		while (I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) != SET) {
 			;
 		}
-	test[1]=I2C_ReceiveData(I2C1);
+		I2C_ClearFlag(I2C1, I2C_FLAG_RXNE);
+		IMUrawData[i] = I2C_ReceiveData(I2C1);
+	}
+	I2C_AcknowledgeConfig(I2C1, DISABLE);
+	I2C_GenerateSTOP(I2C1, ENABLE);
+	dataCoversionIMU();
 }
 
-//
-//
-//void init_I2C1(void){
-//
-//	GPIO_InitTypeDef GPIO_InitStruct;
-//	I2C_InitTypeDef I2C_InitStruct;
-//
-//	// enable APB1 peripheral clock for I2C1
-//	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
-//	// enable clock for SCL and SDA pins
-//	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-//
-//	/* setup SCL and SDA pins
-//	 * You can connect I2C1 to two different
-//	 * pairs of pins:
-//	 * 1. SCL on PB6 and SDA on PB7
-//	 * 2. SCL on PB8 and SDA on PB9
-//	 */
-//	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7; // we are going to use PB6 and PB7
-//	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;			// set pins to alternate function
-//	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;		// set GPIO speed
-//	GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;			// set output to open drain --> the line has to be only pulled low, not driven high
-//	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;			// enable pull up resistors
-//	GPIO_Init(GPIOB, &GPIO_InitStruct);					// init GPIOB
-//
-//	// Connect I2C1 pins to AF
-//	GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1);	// SCL
-//	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_I2C1); // SDA
-//
-//	// configure I2C1
-//	I2C_InitStruct.I2C_ClockSpeed = 100000; 		// 100kHz
-//	I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;			// I2C mode
-//	I2C_InitStruct.I2C_DutyCycle = I2C_DutyCycle_2;	// 50% duty cycle --> standard
-//	I2C_InitStruct.I2C_OwnAddress1 = 0x00;			// own address, not relevant in master mode
-//	I2C_InitStruct.I2C_Ack = I2C_Ack_Disable;		// disable acknowledge when reading (can be changed later on)
-//	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit; // set address length to 7 bit addresses
-//	I2C_Init(I2C1, &I2C_InitStruct);				// init I2C1
-//
-//	// enable I2C1
-//	I2C_Cmd(I2C1, ENABLE);
-//}
-//
-///* This function issues a start condition and
-// * transmits the slave address + R/W bit
-// *
-// * Parameters:
-// * 		I2Cx --> the I2C peripheral e.g. I2C1
-// * 		address --> the 7 bit slave address
-// * 		direction --> the tranmission direction can be:
-// * 						I2C_Direction_Tranmitter for Master transmitter mode
-// * 						I2C_Direction_Receiver for Master receiver
-// */
-//void I2C_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction){
-//	// wait until I2C1 is not busy anymore
-//	while(I2C_GetFlagStatus(I2Cx, I2C_FLAG_BUSY));
-//
-//	// Send I2C1 START condition
-//	I2C_GenerateSTART(I2Cx, ENABLE);
-//
-//	// wait for I2C1 EV5 --> Slave has acknowledged start condition
-//	while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_MODE_SELECT));
-//
-//	// Send slave Address for write
-//	I2C_Send7bitAddress(I2Cx, address, direction);
-//
-//	/* wait for I2C1 EV6, check if
-//	 * either Slave has acknowledged Master transmitter or
-//	 * Master receiver mode, depending on the transmission
-//	 * direction
-//	 */
-//	if(direction == I2C_Direction_Transmitter){
-//		while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
-//	}
-//	else if(direction == I2C_Direction_Receiver){
-//		while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
-//	}
-//}
-//
-///* This function transmits one byte to the slave device
-// * Parameters:
-// *		I2Cx --> the I2C peripheral e.g. I2C1
-// *		data --> the data byte to be transmitted
-// */
-//void I2C_write(I2C_TypeDef* I2Cx, uint8_t data)
-//{
-//	I2C_SendData(I2Cx, data);
-//	// wait for I2C1 EV8_2 --> byte has been transmitted
-//	while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
-//}
-//
-///* This function reads one byte from the slave device
-// * and acknowledges the byte (requests another byte)
-// */
-//uint8_t I2C_read_ack(I2C_TypeDef* I2Cx){
-//	// enable acknowledge of recieved data
-//	I2C_AcknowledgeConfig(I2Cx, ENABLE);
-//	// wait until one byte has been received
-//	while( !I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED) );
-//	// read data from I2C data register and return data byte
-//	uint8_t data = I2C_ReceiveData(I2Cx);
-//	return data;
-//}
-//
-///* This function reads one byte from the slave device
-// * and doesn't acknowledge the recieved data
-// */
-//uint8_t I2C_read_nack(I2C_TypeDef* I2Cx){
-//	// disabe acknowledge of received data
-//	// nack also generates stop condition after last byte received
-//	// see reference manual for more info
-//	I2C_AcknowledgeConfig(I2Cx, DISABLE);
-//	I2C_GenerateSTOP(I2Cx, ENABLE);
-//	// wait until one byte has been received
-//	while( !I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED) );
-//	// read data from I2C data register and return data byte
-//	uint8_t data = I2C_ReceiveData(I2Cx);
-//	return data;
-//}
-//
-///* This funtion issues a stop condition and therefore
-// * releases the bus
-// */
-//void I2C_stop(I2C_TypeDef* I2Cx){
-//	// Send I2C1 STOP Condition
-//	I2C_GenerateSTOP(I2Cx, ENABLE);
-//}
+
+//konwersja danych z rejestrów IMU na faktyczne wartoœci
+void dataCoversionIMU(void) {
+	IMUdata.Accel[0] = IMUrawData[0] << 8 | IMUrawData[1];
+	IMUdata.Accel[1] = IMUrawData[2] << 8 | IMUrawData[3];
+	IMUdata.Accel[2] = IMUrawData[4] << 8 | IMUrawData[5];
+	IMUdata.Temp = IMUrawData[6] << 8 | IMUrawData[7];
+	IMUdata.Gyro[0] = IMUrawData[8] << 8 | IMUrawData[9];
+	IMUdata.Gyro[1] = IMUrawData[10] << 8 | IMUrawData[11];
+	IMUdata.Gyro[2] = IMUrawData[12] << 8 | IMUrawData[13];
+}
+
+
+
+//Przerwanie od zdarzen w I2C
+//Kolejne kroki okreœla zmienna imInterruptSeqence
+//Sprawdzam flagi i po kolei robiê tak jak w I2Ctest
+volatile uint8_t imuInterruptSequence;
+
+void I2C1_EV_IRQHandler(void) {
+	if (I2C_GetFlagStatus(I2C1, I2C_FLAG_SB) == SET) {
+		I2C_ClearFlag(I2C1, I2C_FLAG_SB);
+		if (imuInterruptSequence == 0) {
+			I2C_Send7bitAddress(I2C1, (IMUaddress << 1),
+			I2C_Direction_Transmitter);
+			imuInterruptSequence++;
+			return;
+		} else if (imuInterruptSequence == 3) {
+			I2C_Send7bitAddress(I2C1, (IMUaddress << 1),
+			I2C_Direction_Receiver);
+			imuInterruptSequence++;
+			return;
+		}
+	}
+	if (I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) == SET) {
+		I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
+		if (imuInterruptSequence == 1) {
+			I2C1->SR2;
+			I2C_SendData(I2C1, 59);
+			imuInterruptSequence++;
+			return;
+		} else if (imuInterruptSequence == 4) {
+			I2C1->SR2;
+			imuInterruptSequence++;
+			return;
+		}
+	}
+	if ((I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF) == SET)
+			|| (I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) == SET)) {
+		I2C_ClearFlag(I2C1, I2C_FLAG_BTF);
+
+		if (imuInterruptSequence == 2) {
+			I2C_GenerateSTART(I2C1, ENABLE);
+			imuInterruptSequence++;
+		} else if (imuInterruptSequence == 5) {
+			static int i = 0;
+			IMUrawData[i] = I2C_ReceiveData(I2C1);
+			i++;
+			if (i >= 13) { //po odebraniu przedostatniego bitu, w czasie transmisji ostatniego
+				I2C_AcknowledgeConfig(I2C1, DISABLE);
+				I2C_GenerateSTOP(I2C1, ENABLE);
+				if (i >= 14) {  //po odebraniu ostatniego
+					i = 0;
+					imuInterruptSequence = 0;
+					dataCoversionIMU();
+				}
+			}
+			return;
+		}
+	}
+	if (I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) == SET) {
+		I2C_ClearFlag(I2C1, I2C_FLAG_RXNE);
+	}
+	if (I2C_GetFlagStatus(I2C1, I2C_FLAG_ADD10) == SET) {
+		I2C_ClearFlag(I2C1, I2C_FLAG_ADD10);
+	}
+	if (I2C_GetFlagStatus(I2C1, I2C_FLAG_STOPF) == SET) {
+		I2C_ClearFlag(I2C1, I2C_FLAG_STOPF);
+	}
+	if (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) == SET) {
+		I2C_ClearFlag(I2C1, I2C_FLAG_TXE);
+	}
+}
+

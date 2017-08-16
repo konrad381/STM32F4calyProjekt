@@ -2,8 +2,8 @@
 
 //===================================================================================================
 int main(void) {
-	//RCC_ClocksTypeDef RCC_Clocks;
-	//RCC_GetClocksFreq(&RCC_Clocks);
+	RCC_ClocksTypeDef RCC_Clocks;
+	RCC_GetClocksFreq(&RCC_Clocks);
 	//initBootloader();
 	if (SysTick_Config(SystemCoreClock / 1000)) {
 		/* Capture error */
@@ -11,21 +11,23 @@ int main(void) {
 			;
 	}
 	initGPIO();
-	//initI2C();
-	//initCan();
-	//initUart2();
-	//initUart1();
+	IMUinit();
+	initCan();
+	initUart2();
+	initUart1();
+	buzzerInit();
 	//initAdcWatchdog();
 	//initAdc();
 	GPIO_SetBits(GPIOC, GPIO_Pin_1);
 	lazikRuch = 1;
 
-
-	initI2C();
-	I2Ctest();
+	buzzerOn(250, 500, 2);
 
 	while (1) {
-		delay(100);
+		I2CstartDataAcquisition();
+		//I2Ctest();
+		delay(20);
+
 		if (batteryError != 0) {
 			GPIO_SetBits(GPIOC, GPIO_Pin_0);
 			delay(100);

@@ -12,6 +12,7 @@
 #include "UARTlib.h"
 #include "ADClib.h"
 #include "I2Clib.h"
+#include "buzzerLib.h"
 
 #define wartoscOpoznienia 200
 

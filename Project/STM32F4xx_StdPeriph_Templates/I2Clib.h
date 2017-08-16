@@ -10,12 +10,25 @@
 
 #include "stm32f4xx.h"
 
-s16 test[6];
+volatile uint8_t IMUrawData[14];
 
-void initI2C(void);
+void IMUinit(void);
 void I2Ctest(void);
-#define myAddress 0b1101000 // the slave address (example)
-//void init_I2C1(void);
-//void I2C_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction);
+void IMUsetReg(uint8_t regNum, uint8_t regValue);
+void I2CstartDataAcquisition(void);
+void I2C1_EV_IRQHandler(void);
+
+typedef struct {
+	volatile int16_t Accel[3];
+	volatile int16_t Gyro[3];
+	volatile int16_t Temp;
+	volatile int16_t AccelScale;
+	volatile int16_t GyroScale;
+} ImuData_TypeDef;
+
+
+ImuData_TypeDef IMUdata;
+
+#define IMUaddress 0b1101000 // the slave address (example)
 
 #endif

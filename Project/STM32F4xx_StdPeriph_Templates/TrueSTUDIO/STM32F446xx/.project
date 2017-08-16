@@ -392,6 +392,16 @@
 			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/BootloaderLib.h</location>
 		</link>
 		<link>
+			<name>User/BuzzerLib.c</name>
+			<type>1</type>
+			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/BuzzerLib.c</location>
+		</link>
+		<link>
+			<name>User/BuzzerLib.h</name>
+			<type>1</type>
+			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/BuzzerLib.h</location>
+		</link>
+		<link>
 			<name>User/CANlib.c</name>
 			<type>1</type>
 			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/CANlib.c</location>
