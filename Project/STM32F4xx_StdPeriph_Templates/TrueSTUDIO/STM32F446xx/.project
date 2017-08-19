@@ -412,14 +412,24 @@
 			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/CANlib.h</location>
 		</link>
 		<link>
-			<name>User/I2Clib.c</name>
+			<name>User/IMUlib.c</name>
 			<type>1</type>
-			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/I2Clib.c</location>
+			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/IMUlib.c</location>
 		</link>
 		<link>
-			<name>User/I2Clib.h</name>
+			<name>User/IMUlib.h</name>
 			<type>1</type>
-			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/I2Clib.h</location>
+			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/IMUlib.h</location>
+		</link>
+		<link>
+			<name>User/MAGlib.c</name>
+			<type>1</type>
+			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/MAGlib.c</location>
+		</link>
+		<link>
+			<name>User/MAGlib.h</name>
+			<type>1</type>
+			<location>D:/Projekty/STM32/Atollic/STM32F4xx_DSP_StdPeriph_Lib_V1.7.1/Project/STM32F4xx_StdPeriph_Templates/MAGlib.h</location>
 		</link>
 		<link>
 			<name>User/UARTlib.c</name>

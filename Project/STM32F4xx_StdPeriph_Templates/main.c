@@ -12,6 +12,7 @@ int main(void) {
 	}
 	initGPIO();
 	IMUinit();
+	MAGinit();
 	initCan();
 	initUart2();
 	initUart1();
@@ -20,13 +21,11 @@ int main(void) {
 	//initAdc();
 	GPIO_SetBits(GPIOC, GPIO_Pin_1);
 	lazikRuch = 1;
-
 	buzzerOn(250, 500, 2);
 
 	while (1) {
-		I2CstartDataAcquisition();
-		//I2Ctest();
-		delay(20);
+		I2C3startDataAcquisition();
+		delay(5);
 
 		if (batteryError != 0) {
 			GPIO_SetBits(GPIOC, GPIO_Pin_0);

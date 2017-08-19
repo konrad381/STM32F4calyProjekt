@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef I2Clib_H
-#define I2Clib_H
+#ifndef IMUlib_H
+#define IMUlib_H
 
 #include "stm32f4xx.h"
 
